@@ -131,4 +131,16 @@ Finish time: 11:20
 
 Actual time: 01:30
 
+## DAY 4
+Number and name of feature: 1, Add movies API call
+
+Estimate of time needed to complete: 30 minutes
+
+Start time: 09:40
+Finish time: 
+
+Actual time: 25 minutes
+
+
+
 
