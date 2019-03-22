@@ -137,9 +137,28 @@ Number and name of feature: 1, Add movies API call
 Estimate of time needed to complete: 30 minutes
 
 Start time: 09:40
-Finish time: 
+Finish time: 10:47
 
-Actual time: 25 minutes
+Actual time:  67 minutes (discussing api formatting and docs)
+
+
+Number and name of feature: 2, Add Yelp
+
+Estimate of time needed to complete: 1 hour
+
+Start time: 11:35
+Finish time: 11:20
+
+Actual time:  1.40 hours (discussing api formatting and docs, heroku issues)
+
+Number and name of feature: 2, 
+
+Estimate of time needed to complete: 30 minutes
+
+Start time: 09:40
+Finish time: 11:20
+
+Actual time:  1.40 hours (discussing api formatting and docs, heroku issues)
 
 
 

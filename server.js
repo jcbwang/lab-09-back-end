@@ -23,6 +23,7 @@ app.get('/location', getLocation);
 app.get('/weather', getWeather);
 app.get('/meetups', getMeetups);
 app.get('/movies', getMovies);
+app.get('/yelp', getYelps);
 
 // '*' route for invalid endpoints
 app.use('*', (req, res) => res.send('Sorry, that route does not exist'));
@@ -224,4 +225,31 @@ function Movie(movieResult, imgUrlBase){
   this.popularity = movieResult.popularity;
   this.image_url = imgUrlBase + movieResult.poster_path;
   this.overview = movieResult.overview;
+}
+
+function getYelps(req,res){
+  let query = req.query.data.id;
+  let sql = `SELECT * FROM yelps WHERE location_id=$1;`;
+  let values=[query];
+  client.query(sql,values)
+    .then(result => {
+      if(result.rowCount > 0){
+        console.log('Yelp data from SQL');
+        res.send(result.rows);
+      }else{
+        const url = `https://api.yelp.com/v3/businesses/search?latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
+        superagent.get(url)
+          .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
+          .then(yelpResults => {
+            console.log('Yelp data from API');
+            if(!yelpResults.body.businesses.length) throw 'no yelp data';
+            else{
+              const yelpArray= yelpResults.body.businesses.map(business => {
+                let yelp = new Yelp(business);
+              });
+            }
+          })
+          .catch(error => handleError(error));
+      }
+    });
 }
