@@ -191,26 +191,24 @@ function getMovies(req,res){
             else{
               imgUrlBase = configResult.body.images.secure_base_url + configResult.body.images.poster_sizes[3];
             }
-          })
-          .catch(error => handleError(error));
-        //get movie results
-        const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&query=${req.query.data.search_query}`;
-        superagent.get(movieUrl)
-          .then(moviesResults => {
-            console.log('Movies from API');
-            if(!moviesResults.body.results.length) throw 'no movies';
-            else{
-              const moviesArray = moviesResults.body.results.map(movieResult => {
-                let movie = new Movie(movieResult, imgUrlBase);
-                movie.location_id = query;
-                const newSql = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview,location_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8);`;
-                let newValues = Object.values(movie);
-                client.query(newSql,newValues);
-                return movie;
-              });
-              res.send(moviesArray);
-            }
-
+            //get movie results
+            const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&query=${req.query.data.search_query}`;
+            superagent.get(movieUrl)
+              .then(moviesResults => {
+                console.log('Movies from API');
+                if(!moviesResults.body.results.length) throw 'no movies';
+                else{
+                  const moviesArray = moviesResults.body.results.map(movieResult => {
+                    let movie = new Movie(movieResult, imgUrlBase);
+                    movie.location_id = query;
+                    const newSql = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview,location_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8);`;
+                    let newValues = Object.values(movie);
+                    client.query(newSql,newValues);
+                    return movie;
+                  });
+                  res.send(moviesArray);
+                }
+              })
           })
           .catch(error => handleError(error));
       }
