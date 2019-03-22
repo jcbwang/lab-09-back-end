@@ -12,10 +12,24 @@ This site is being built so that we can get hands on experience with backend sys
 ## Getting Started
 <!-- What are the steps that a user must take in order to build this app on their own machine and get it running? -->
 Location-route
-step 1: Copy base code from our Repo.
-step 2: In terminal window 'npm install dotenv' and create '.env' file containing PORT='port number you use'.
-step 3: Run nodemon and test routes (location) and outputs.
-step 4: deploy if desired.
+step 1: Copy base code from our Repo. `git clone https://github.com/jcwang118/lab-09-back-end.git`, then cd into directory `cd lab-09-back-end`.
+step 2: In terminal window `npm install dotenv express pg cors superagent` and 
+step 3: Create `.env` file containing environment variables: 
+```
+PORT=3000
+DATABASE_URL=postres://localhost:5432/city_explorer
+DARK_SKY_API_KEY=
+YELP_API_KEY=
+GOOGLE_MAPS_API_KEY=
+MOVIE_DB_API_KEY=
+MEETUP_API_KEY=
+HIKING_API_KEY=
+```
+step 4: Create a `city_explorer` database, then create tables:
+`psql -f data/schema.sql -d city_explorer`.
+step 5: Run `nodemon`.
+step 6: deploy if desired.
+
 
 
 
