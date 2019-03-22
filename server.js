@@ -22,6 +22,7 @@ client.on('error', error => console.error(error));
 app.get('/location', getLocation);
 app.get('/weather', getWeather);
 app.get('/meetups', getMeetups);
+app.get('/movies', getMovies);
 
 // '*' route for invalid endpoints
 app.use('*', (req, res) => res.send('Sorry, that route does not exist'));
@@ -168,4 +169,59 @@ function MeetupEvent(event) {
   this.name = event.name;
   this.creation_date = new Date(event.time).toString().slice(0, 15);
   this.host = event.group.name;
+}
+
+function getMovies(req,res){
+  let query = req.query.data.id;
+  let sql = `SELECT * FROM movies WHERE location_id=$1;`;
+  let values = [query];
+  client.query(sql,values)
+    .then(result => {
+      if (result.rowCount > 0){
+        console.log('Movie data from database');
+        res.send(result.rows);
+      } else{ //image url requires separate api call for first half of url.
+        const configUrl = `https://api.themoviedb.org/3/configuration?api_key=${process.env.MOVIE_DB_API_KEY}`;
+        let imgUrlBase;
+        superagent.get(configUrl)
+          .then(configResult => {
+            console.log('Base image url from API');
+            if(!configResult.body.images) throw 'no config data';
+            else{
+              imgUrlBase = configResult.body.images.secure_base_url + configResult.body.images.poster_sizes[3];
+            }
+          })
+          .catch(error => handleError(error));
+        //get movie results
+        const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&query=${req.query.data.search_query}`;
+        superagent.get(movieUrl)
+          .then(moviesResults => {
+            console.log('Movies from API');
+            if(!moviesResults.body.results.length) throw 'no movies';
+            else{
+              const moviesArray = moviesResults.body.results.map(movieResult => {
+                let movie = new Movie(movieResult, imgUrlBase);
+                movie.location_id = query;
+                const newSql = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview,location_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8);`;
+                let newValues = Object.values(movie);
+                client.query(newSql,newValues);
+                return movie;
+              });
+              res.send(moviesArray);
+            }
+
+          })
+          .catch(error => handleError(error));
+      }
+    });
+}
+
+function Movie(movieResult, imgUrlBase){
+  this.title = movieResult.title;
+  this.released_on = movieResult.release_date;
+  this.total_votes = movieResult.vote_count;
+  this.average_votes = movieResult.vote_average;
+  this.popularity = movieResult.popularity;
+  this.image_url = imgUrlBase + movieResult.poster_path;
+  this.overview = movieResult.overview;
 }
