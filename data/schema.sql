@@ -43,7 +43,7 @@ CREATE TABLE movies(
   FOREIGN KEY (location_id) REFERENCES locations (id)
 );
 
-CREATE TABLE yelps{
+CREATE TABLE yelps(
   id SERIAL PRIMARY KEY,
   url VARCHAR(255),
   name VARCHAR(255),
@@ -52,4 +52,4 @@ CREATE TABLE yelps{
   image_url VARCHAR(255),
   location_id INTEGER NOT NULL,
   FOREIGN KEY (location_id) REFERENCES locations (id)
-};
+);
