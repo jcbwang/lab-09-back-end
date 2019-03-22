@@ -253,3 +253,11 @@ function getYelps(req,res){
       }
     });
 }
+
+function Yelp(business){
+  this.url = business.url;
+  this.name = business.name;
+  this.rating = business.rating;
+  this.price = business.price;
+  this.image_url = business.image_url;
+}
