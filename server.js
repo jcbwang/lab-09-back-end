@@ -246,7 +246,13 @@ function getYelps(req,res){
             else{
               const yelpArray= yelpResults.body.businesses.map(business => {
                 let yelp = new Yelp(business);
+                yelp.location_id = query;
+                let newSql = `INSERT INTO yelps(url, name, rating, price, image_url, location_id) VALUES($1,$2,$3,$4,$5,$6);`;
+                let newValues = Object.values(yelp);
+                client.query(newSql,newValues);
+                return yelp;
               });
+              res.send(yelpArray);
             }
           })
           .catch(error => handleError(error));
