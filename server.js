@@ -28,14 +28,16 @@ app.get('/yelp', getYelps);
 // '*' route for invalid endpoints
 app.use('*', (req, res) => res.send('Sorry, that route does not exist'));
 
+// Open port for server to listen on
 app.listen(PORT, () => console.log(`Listening on PORT ${PORT}`));
+
+
+// HELPER FUNCTIONS
 
 function handleError(err, res) {
   console.error(err);
   if (res) res.status(500).send('Sorry, something went wrong');
 }
-
-// HELPER FUNCTIONS
 
 function getLocation(req, res) {
   let query = req.query.data;
@@ -71,18 +73,10 @@ function getLocation(req, res) {
                   res.send(location);
                 });
             }
-          })
-          .catch(error => handleError(error, res));
+          });
       }
-    });
-}
-
-// Location object constructor
-function Location(query, data) {
-  this.search_query = query;
-  this.formatted_query = data.formatted_address;
-  this.latitude = data.geometry.location.lat;
-  this.longitude = data.geometry.location.lng;
+    })
+    .catch(error => handleError(error, res));
 }
 
 function getWeather(req, res) {
@@ -104,7 +98,7 @@ function getWeather(req, res) {
               const weatherSummaries = weatherResults.body.daily.data.map(day => {
                 let summary = new Forecast(day); // create Forecast object for each day
                 summary.location_id = query; // attach location id to each day's forecast
-              
+
                 let newSql = `INSERT INTO weathers(forecast,time,location_id) VALUES($1, $2, $3);`;
                 let newValues = Object.values(summary);
 
@@ -113,16 +107,10 @@ function getWeather(req, res) {
               });
               res.send(weatherSummaries); // once weather array is created, send back to front end
             }
-          })
-          .catch(error => handleError(error, res)); // any superagent errors handled here
+          });
       }
-    });
-}
-
-// Forecast object constructor
-function Forecast(day) {
-  this.forecast = day.summary;
-  this.time = new Date(day.time*1000).toString().slice(0,15);
+    })
+    .catch(error => handleError(error, res)); // any superagent errors handled here
 }
 
 function getMeetups(req, res) {
@@ -149,19 +137,109 @@ function getMeetups(req, res) {
 
                 let newSql = `INSERT INTO meetups(link, name, creation_date, host, location_id) VALUES($1, $2, $3, $4, $5);`;
                 let newValues = Object.values(meetup);
-              
+
                 client.query(newSql, newValues);
-                              
+
                 return meetup;
               });
               res.send(meetupArray);
             }
-          })
-          .catch(error => handleError(error, res));
+          });
       }
     })
     .catch(error => handleError(error, res));
-    
+
+}
+
+function getMovies(req, res) {
+  let query = req.query.data.id;
+  let sql = `SELECT * FROM movies WHERE location_id=$1;`;
+  let values = [query];
+  client.query(sql, values)
+    .then(result => {
+      if (result.rowCount > 0) {
+        console.log('Movie data from database');
+        res.send(result.rows);
+      } else { //image url requires separate api call for first half of url.
+        const configUrl = `https://api.themoviedb.org/3/configuration?api_key=${process.env.MOVIE_DB_API_KEY}`;
+        let imgUrlBase;
+        superagent.get(configUrl)
+          .then(configResult => {
+            console.log('Base image url from API');
+            if (!configResult.body.images) throw 'no config data';
+            else {
+              imgUrlBase = configResult.body.images.secure_base_url + configResult.body.images.poster_sizes[3];
+            }
+            //get movie results
+            const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&query=${req.query.data.search_query}`;
+            superagent.get(movieUrl)
+              .then(moviesResults => {
+                console.log('Movies from API');
+                if (!moviesResults.body.results.length) throw 'no movies';
+                else {
+                  const moviesArray = moviesResults.body.results.map(movieResult => {
+                    let movie = new Movie(movieResult, imgUrlBase);
+                    movie.location_id = query;
+                    const newSql = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview,location_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8);`;
+                    let newValues = Object.values(movie);
+                    client.query(newSql, newValues);
+                    return movie;
+                  });
+                  res.send(moviesArray);
+                }
+              });
+          });
+      }
+    })
+    .catch(error => handleError(error));
+}
+
+function getYelps(req, res) {
+  let query = req.query.data.id;
+  let sql = `SELECT * FROM yelps WHERE location_id=$1;`;
+  let values = [query];
+  client.query(sql, values)
+    .then(result => {
+      if (result.rowCount > 0) {
+        console.log('Yelp data from SQL');
+        res.send(result.rows);
+      } else {
+        const url = `https://api.yelp.com/v3/businesses/search?latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
+        superagent.get(url)
+          .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
+          .then(yelpResults => {
+            console.log('Yelp data from API');
+            if (!yelpResults.body.businesses.length) throw 'no yelp data';
+            else {
+              const yelpArray = yelpResults.body.businesses.map(business => {
+                let yelp = new Yelp(business);
+                yelp.location_id = query;
+                let newSql = `INSERT INTO yelps(url, name, rating, price, image_url, location_id) VALUES($1,$2,$3,$4,$5,$6);`;
+                let newValues = Object.values(yelp);
+                client.query(newSql, newValues);
+                return yelp;
+              });
+              res.send(yelpArray);
+            }
+          });
+      }
+    })
+    .catch(error => handleError(error));
+
+}
+
+// Location object constructor
+function Location(query, data) {
+  this.search_query = query;
+  this.formatted_query = data.formatted_address;
+  this.latitude = data.geometry.location.lat;
+  this.longitude = data.geometry.location.lng;
+}
+
+// Forecast object constructor
+function Forecast(day) {
+  this.forecast = day.summary;
+  this.time = new Date(day.time*1000).toString().slice(0,15);
 }
 
 // Meetup event object constructor
@@ -172,47 +250,12 @@ function MeetupEvent(event) {
   this.host = event.group.name;
 }
 
-function getMovies(req,res){
-  let query = req.query.data.id;
-  let sql = `SELECT * FROM movies WHERE location_id=$1;`;
-  let values = [query];
-  client.query(sql,values)
-    .then(result => {
-      if (result.rowCount > 0){
-        console.log('Movie data from database');
-        res.send(result.rows);
-      } else{ //image url requires separate api call for first half of url.
-        const configUrl = `https://api.themoviedb.org/3/configuration?api_key=${process.env.MOVIE_DB_API_KEY}`;
-        let imgUrlBase;
-        superagent.get(configUrl)
-          .then(configResult => {
-            console.log('Base image url from API');
-            if(!configResult.body.images) throw 'no config data';
-            else{
-              imgUrlBase = configResult.body.images.secure_base_url + configResult.body.images.poster_sizes[3];
-            }
-            //get movie results
-            const movieUrl = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&query=${req.query.data.search_query}`;
-            superagent.get(movieUrl)
-              .then(moviesResults => {
-                console.log('Movies from API');
-                if(!moviesResults.body.results.length) throw 'no movies';
-                else{
-                  const moviesArray = moviesResults.body.results.map(movieResult => {
-                    let movie = new Movie(movieResult, imgUrlBase);
-                    movie.location_id = query;
-                    const newSql = `INSERT INTO movies(title, released_on, total_votes, average_votes, popularity, image_url, overview,location_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8);`;
-                    let newValues = Object.values(movie);
-                    client.query(newSql,newValues);
-                    return movie;
-                  });
-                  res.send(moviesArray);
-                }
-              })
-          })
-          .catch(error => handleError(error));
-      }
-    });
+function Yelp(business){
+  this.url = business.url;
+  this.name = business.name;
+  this.rating = business.rating;
+  this.price = business.price;
+  this.image_url = business.image_url;
 }
 
 function Movie(movieResult, imgUrlBase){
@@ -223,45 +266,4 @@ function Movie(movieResult, imgUrlBase){
   this.popularity = movieResult.popularity;
   this.image_url = imgUrlBase + movieResult.poster_path;
   this.overview = movieResult.overview;
-}
-
-function getYelps(req,res){
-  let query = req.query.data.id;
-  let sql = `SELECT * FROM yelps WHERE location_id=$1;`;
-  let values=[query];
-  client.query(sql,values)
-    .then(result => {
-      if(result.rowCount > 0){
-        console.log('Yelp data from SQL');
-        res.send(result.rows);
-      }else{
-        const url = `https://api.yelp.com/v3/businesses/search?latitude=${req.query.data.latitude}&longitude=${req.query.data.longitude}`;
-        superagent.get(url)
-          .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
-          .then(yelpResults => {
-            console.log('Yelp data from API');
-            if(!yelpResults.body.businesses.length) throw 'no yelp data';
-            else{
-              const yelpArray= yelpResults.body.businesses.map(business => {
-                let yelp = new Yelp(business);
-                yelp.location_id = query;
-                let newSql = `INSERT INTO yelps(url, name, rating, price, image_url, location_id) VALUES($1,$2,$3,$4,$5,$6);`;
-                let newValues = Object.values(yelp);
-                client.query(newSql,newValues);
-                return yelp;
-              });
-              res.send(yelpArray);
-            }
-          })
-          .catch(error => handleError(error));
-      }
-    });
-}
-
-function Yelp(business){
-  this.url = business.url;
-  this.name = business.name;
-  this.rating = business.rating;
-  this.price = business.price;
-  this.image_url = business.image_url;
 }
