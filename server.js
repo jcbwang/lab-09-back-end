@@ -59,7 +59,6 @@ function getLocation(req, res) {
             console.log('LOCATION FROM API');
 
             if (!data.body.results.length) throw 'NO LOCATION DATA';
-            value
             else {
               let location = new Location(query, data.body.results[0]);
 
