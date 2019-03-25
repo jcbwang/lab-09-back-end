@@ -213,10 +213,8 @@ function getMovies(req, res) {
         superagent
           .get(configUrl)
           .then(configResult => {
-            if (!configResult.body.images) {
-              imgUrlBase = 'https://image.tmdb.org/t/p/w342';
-              throw 'NO MOVIEDB CONFIG DATA';
-            } else imgUrlBase = configResult.body;
+            if (!configResult.body.images) throw 'NO MOVIEDB CONFIG DATA'
+            else imgUrlBase = configResult.body.images.secure_base_url + configResult.body.images.poster_sizes[3];
 
             const url = `https://api.themoviedb.org/3/search/movie?api_key=${process.env.MOVIE_DB_API_KEY}&language=en-US&query=${req.query.data.search_query}`;
             superagent
