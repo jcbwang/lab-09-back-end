@@ -58,7 +58,7 @@ function getLocation(req, res) {
           .then(data => {
             console.log('LOCATION FROM API');
 
-            if (!data.body.results.length) throw 'NO DATA';
+            if (!data.body.results.length) throw 'NO LOCATION DATA';
 
             else {
               let location = new Location(query, data.body.results[0]);
@@ -69,7 +69,6 @@ function getLocation(req, res) {
               client.query(newSql, newValues)
                 .then(result => {
                   location.id = result.rows[0].id;
-
                   res.send(location);
                 });
             }
@@ -93,7 +92,7 @@ function getWeather(req, res) {
         superagent.get(url)
           .then(weatherResults => {
             console.log('WEATHER FROM API');
-            if (!weatherResults.body.daily.data.length) throw 'NO DATA'; // if we get no data from API call, throw error
+            if (!weatherResults.body.daily.data.length) throw 'NO WEATHER DATA'; // if we get no data from API call, throw error
             else { // otherwise, process data through constructor
               const weatherSummaries = weatherResults.body.daily.data.map(day => {
                 let summary = new Forecast(day); // create Forecast object for each day
@@ -129,7 +128,7 @@ function getMeetups(req, res) {
         superagent.get(url)
           .then(meetupResults => {
             console.log('MEETUPS FROM API');
-            if (!meetupResults.body.events.length) throw 'NO DATA';
+            if (!meetupResults.body.events.length) throw 'NO MEETUP DATA';
             else {
               const meetupArray = meetupResults.body.events.map(event => {
                 let meetup = new MeetupEvent(event);
@@ -166,7 +165,7 @@ function getMovies(req, res) {
         superagent.get(configUrl)
           .then(configResult => {
             console.log('Base image url from API');
-            if (!configResult.body.images) throw 'no config data';
+            if (!configResult.body.images) throw 'NO MOVIEDB CONFIG DATA';
             else {
               imgUrlBase = configResult.body.images.secure_base_url + configResult.body.images.poster_sizes[3];
             }
@@ -175,7 +174,7 @@ function getMovies(req, res) {
             superagent.get(movieUrl)
               .then(moviesResults => {
                 console.log('Movies from API');
-                if (!moviesResults.body.results.length) throw 'no movies';
+                if (!moviesResults.body.results.length) throw 'NO MOVIEDB MOVIE DATA';
                 else {
                   const moviesArray = moviesResults.body.results.map(movieResult => {
                     let movie = new Movie(movieResult, imgUrlBase);
@@ -209,7 +208,7 @@ function getYelps(req, res) {
           .set('Authorization', `Bearer ${process.env.YELP_API_KEY}`)
           .then(yelpResults => {
             console.log('Yelp data from API');
-            if (!yelpResults.body.businesses.length) throw 'no yelp data';
+            if (!yelpResults.body.businesses.length) throw 'NO YELP DATA';
             else {
               const yelpArray = yelpResults.body.businesses.map(business => {
                 let yelp = new Yelp(business);
