@@ -59,12 +59,12 @@ function getLocation(req, res) {
             console.log('LOCATION FROM API');
 
             if (!data.body.results.length) throw 'NO LOCATION DATA';
-
+            value
             else {
               let location = new Location(query, data.body.results[0]);
 
-              let newSql = `INSERT INTO locations(search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING id;`;
               let newValues = Object.values(location);
+              let newSql = `INSERT INTO locations(${Object.keys(location)}) VALUES (${newValues.map((v, idx) => idx + 1)}) RETURNING id;`;
 
               client.query(newSql, newValues)
                 .then(result => {
