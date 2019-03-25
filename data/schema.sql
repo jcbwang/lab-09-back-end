@@ -10,8 +10,7 @@ CREATE TABLE locations (
   search_query VARCHAR(255),
   formatted_query VARCHAR(255),
   latitude NUMERIC(16, 14),
-  longitude NUMERIC(17, 14),
-  created_at NUMERIC(35)
+  longitude NUMERIC(17, 14)
 );
 
 CREATE TABLE weathers (
